@@ -29,3 +29,49 @@
 ```bash
 git clone https://github.com/yourusername/job-matching-system.git
 cd job-matching-system
+
+2. Создать виртуальное окружение:
+```bash
+python -m venv venv
+source venv/bin/activate  # для Linux/Mac
+venv\Scripts\activate     # для Windows
+
+3. Установить зависимости:
+```bash
+pip install -r requirements.txt
+
+4. Создать файл .env из примера:
+```bash
+cp .env.example .env
+# Отредактировать .env, указав свои настройки
+
+5. Инициализировать базу данных:
+```bash
+python scripts/init_db.py
+python scripts/seed_data.py
+
+6. Запустить приложение:
+```bash
+python run.py
+
+## Запуск через Docker
+```bash
+docker-compose up -d
+
+## 📚 Документация
+- **Схема базы данных**
+- **API документация**
+- **Инструкция по деплою**
+
+## 🤝 Участие в разработке
+1. Fork репозитория
+2. Создайте ветку для фичи (git checkout -b feature/amazing-feature)
+3. Commit изменений (git commit -m 'Add amazing feature')
+4. Push в ветку (git push origin feature/amazing-feature)
+5. Open Pull Request
+
+## 📄 Лицензия
+MIT License - см. файл LICENSE
+
+## 👥 Авторы
+Команда разработчиков - Название команды
