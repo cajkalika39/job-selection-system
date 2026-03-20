@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card p-4">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="avatar-circle-large me-3" style="width: 60px; height: 60px; background-color: #0a2540; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 600;">
+                        {{ user.first_name[0] }}{{ user.last_name[0] }}
+                    </div>
+                    <div>
+                        <h2 class="fw-bold mb-1" style="color: #0a2540;">{{ user.full_name }}</h2>
+                        <p class="text-secondary mb-0">
+                            {% if user.is_employer %}
+                                <i class="bi bi-building me-1"></i> Работодатель
+                                {% if user.company_name %} • {{ user.company_name }}{% endif %}
+                            {% else %}
+                                <i class="bi bi-person-workspace me-1"></i> Соискатель
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <ul class="nav nav-tabs mb-4" id="profileTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab">
+                            <i class="bi bi-person-gear me-1"></i> Основная информация
+                        </button>
+                    </li>
+                    {% if user.is_employer %}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="company-tab" data-bs-toggle="tab" data-bs-target="#company" type="button" role="tab">
+                            <i class="bi bi-building me-1"></i> О компании
+                        </button>
+                    </li>
+                    {% else %}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="skills-tab" data-bs-toggle="tab" data-bs-target="#skills" type="button" role="tab">
+                            <i class="bi bi-code-square me-1"></i> Мои навыки
+                        </button>
+                    </li>
+                    {% endif %}
+                </ul>
+
+                <div class="tab-content" id="profileTabsContent">
+                    <!-- Вкладка с основной информацией (для всех) -->
+                    <div class="tab-pane fade show active" id="info" role="tabpanel">
+                        <form method="POST" enctype="multipart/form-data">
+                            {{ form.hidden_tag() }}
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold">Имя</label>
+                                    {{ form.first_name(class="form-control") }}
+                                    {% if form.first_name.errors %}
+                                        <div class="text-danger small">{{ form.first_name.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold">Фамилия</label>
+                                    {{ form.last_name(class="form-control") }}
+                                    {% if form.last_name.errors %}
+                                        <div class="text-danger small">{{ form.last_name.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Email</label>
+                                <input type="email" class="form-control" value="{{ user.email }}" disabled readonly>
+                                <small class="text-secondary">Email нельзя изменить</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Телефон</label>
+                                {{ form.phone(class="form-control") }}
+                                {% if form.phone.errors %}
+                                    <div class="text-danger small">{{ form.phone.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+
+                            {% if user.is_job_seeker %}
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Резюме (PDF)</label>
+                                {{ form.resume(class="form-control") }}
+                                <small class="text-secondary">Загрузите резюме в формате PDF</small>
+                            </div>
+                            {% endif %}
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-check-circle me-2"></i>Сохранить изменения
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Вкладка с информацией о компании (только для работодателей) -->
+                    {% if user.is_employer %}
+                    <div class="tab-pane fade" id="company" role="tabpanel">
+                        <form method="POST" enctype="multipart/form-data">
+                            {{ form.hidden_tag() }}
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Название компании</label>
+                                {{ form.company_name(class="form-control") }}
+                                {% if form.company_name.errors %}
+                                    <div class="text-danger small">{{ form.company_name.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Описание компании</label>
+                                {{ form.company_description(class="form-control", rows=5) }}
+                                {% if form.company_description.errors %}
+                                    <div class="text-danger small">{{ form.company_description.errors[0] }}</div>
+                                {% endif %}
+                                <small class="text-secondary">Расскажите о вашей компании, миссии, ценностях</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Сайт компании</label>
+                                {{ form.company_website(class="form-control", placeholder="https://example.com") }}
+                                {% if form.company_website.errors %}
+                                    <div class="text-danger small">{{ form.company_website.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Логотип компании</label>
+                                {{ form.company_logo(class="form-control") }}
+                                <small class="text-secondary">Загрузите логотип в формате JPG, PNG или SVG</small>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-save me-2"></i>Сохранить информацию о компании
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    {% endif %}
+
+                    <!-- Вкладка с навыками (только для соискателей) -->
+                    {% if user.is_job_seeker %}
+                    <div class="tab-pane fade" id="skills" role="tabpanel">
+                        <form method="POST" enctype="multipart/form-data">
+                            {{ form.hidden_tag() }}
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Ваши навыки</label>
+                                {{ form.skills(class="form-control", rows=5, placeholder="Например: Python, SQL, React, управление проектами") }}
+                                <small class="text-secondary">Введите навыки через запятую</small>
+                                {% if form.skills.errors %}
+                                    <div class="text-danger small">{{ form.skills.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Текущие навыки</label>
+                                {% if user.skills %}
+                                    <div class="d-flex flex-wrap gap-2">
+                                        {% for us in user.skills %}
+                                            <span class="badge bg-light text-dark p-2 border">
+                                                {{ us.skill.name }}
+                                            </span>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <p class="text-secondary">У вас пока нет добавленных навыков</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Навыки используются для подбора вакансий. Чем больше навыков вы укажете, тем точнее будет подбор.
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-save me-2"></i>Сохранить навыки
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Статистика аккаунта -->
+            <div class="card mt-4 p-4">
+                <h5 class="fw-bold mb-3">Статистика аккаунта</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center p-3">
+                            <div class="display-6 fw-bold text-primary">{{ user.created_at.strftime('%d.%m.%Y') }}</div>
+                            <small class="text-secondary">Дата регистрации</small>
+                        </div>
+                    </div>
+                    {% if user.is_job_seeker %}
+                    <div class="col-md-4">
+                        <div class="text-center p-3">
+                            <div class="display-6 fw-bold text-success">{{ user.skills|length }}</div>
+                            <small class="text-secondary">Навыков в профиле</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center p-3">
+                            <div class="display-6 fw-bold text-info">{{ user.applications|length }}</div>
+                            <small class="text-secondary">Откликов</small>
+                        </div>
+                    </div>
+                    {% elif user.is_employer %}
+                    <div class="col-md-4">
+                        <div class="text-center p-3">
+                            <div class="display-6 fw-bold text-success">{{ user.posted_vacancies|length }}</div>
+                            <small class="text-secondary">Вакансий размещено</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center p-3">
+                            <div class="display-6 fw-bold text-info">{{ user.total_applications_received }}</div>
+                            <small class="text-secondary">Откликов получено</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .nav-tabs .nav-link {
+        color: #5f6c80;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+    }
+    .nav-tabs .nav-link:hover {
+        color: #0a2540;
+        border: none;
+    }
+    .nav-tabs .nav-link.active {
+        color: #0a2540;
+        background: none;
+        border-bottom: 3px solid #0a2540;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}

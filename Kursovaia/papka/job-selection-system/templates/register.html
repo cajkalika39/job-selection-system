@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-6 mx-auto">
+            <div class="card p-4">
+                <h2 class="fw-bold mb-4" style="color: #0a2540;">Регистрация</h2>
+
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.first_name.label(class="form-label fw-semibold") }}
+                            {{ form.first_name(class="form-control") }}
+                            {% if form.first_name.errors %}
+                                <div class="text-danger small">{{ form.first_name.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.last_name.label(class="form-label fw-semibold") }}
+                            {{ form.last_name(class="form-control") }}
+                            {% if form.last_name.errors %}
+                                <div class="text-danger small">{{ form.last_name.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.email.label(class="form-label fw-semibold") }}
+                        {{ form.email(class="form-control") }}
+                        {% if form.email.errors %}
+                            <div class="text-danger small">{{ form.email.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.phone.label(class="form-label fw-semibold") }}
+                        {{ form.phone(class="form-control") }}
+                        {% if form.phone.errors %}
+                            <div class="text-danger small">{{ form.phone.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.password.label(class="form-label fw-semibold") }}
+                            {{ form.password(class="form-control") }}
+                            {% if form.password.errors %}
+                                <div class="text-danger small">{{ form.password.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.confirm_password.label(class="form-label fw-semibold") }}
+                            {{ form.confirm_password(class="form-control") }}
+                            {% if form.confirm_password.errors %}
+                                <div class="text-danger small">{{ form.confirm_password.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.role.label(class="form-label fw-semibold") }}
+                        {{ form.role(class="form-select", id="roleSelect") }}
+                    </div>
+
+                    <div class="mb-3" id="companyField">
+                        {{ form.company_name.label(class="form-label fw-semibold") }}
+                        {{ form.company_name(class="form-control") }}
+                        {% if form.company_name.errors %}
+                            <div class="text-danger small">{{ form.company_name.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                    </div>
+                </form>
+
+                <p class="text-center mt-4">
+                    Уже есть аккаунт?
+                    <a href="{{ url_for('auth.login') }}" class="text-decoration-none">Войти</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Показываем поле компании только для работодателей
+    document.getElementById('roleSelect').addEventListener('change', function() {
+        const companyField = document.getElementById('companyField');
+        if (this.value === 'employer') {
+            companyField.style.display = 'block';
+        } else {
+            companyField.style.display = 'none';
+        }
+    });
+
+    // Инициализация при загрузке
+    if (document.getElementById('roleSelect').value === 'employer') {
+        document.getElementById('companyField').style.display = 'block';
+    } else {
+        document.getElementById('companyField').style.display = 'none';
+    }
+</script>
+{% endblock %}

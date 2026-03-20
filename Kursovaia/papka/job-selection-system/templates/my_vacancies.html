@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold" style="color: #0a2540;">Мои вакансии</h2>
+        <a href="{{ url_for('post_vacancy') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>Разместить вакансию
+        </a>
+    </div>
+
+    {% if vacancies %}
+        <div class="row">
+            {% for vacancy in vacancies %}
+                <div class="col-12 mb-3">
+                    <div class="card p-4">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h4 class="h5 fw-bold mb-1">{{ vacancy.title }}</h4>
+                                <p class="text-secondary mb-2">
+                                    <i class="bi bi-geo-alt me-1"></i> {{ vacancy.location or 'Локация не указана' }}
+                                </p>
+                                {% if vacancy.salary_min or vacancy.salary_max %}
+                                    <p class="text-success mb-2">
+                                        <i class="bi bi-cash-stack me-1"></i>
+                                        {% if vacancy.salary_min and vacancy.salary_max %}
+                                            {{ vacancy.salary_min }} - {{ vacancy.salary_max }} {{ vacancy.currency }}
+                                        {% elif vacancy.salary_min %}
+                                            от {{ vacancy.salary_min }} {{ vacancy.currency }}
+                                        {% elif vacancy.salary_max %}
+                                            до {{ vacancy.salary_max }} {{ vacancy.currency }}
+                                        {% endif %}
+                                    </p>
+                                {% endif %}
+
+                                <div class="mb-2">
+                                    <strong>Требуемые навыки:</strong>
+                                    {% if vacancy.skills %}
+                                        <div class="d-flex flex-wrap gap-2 mt-2">
+                                            {% for vs in vacancy.skills %}
+                                                <span class="badge bg-light text-dark p-2 border">
+                                                    {{ vs.skill.name }}
+                                                </span>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-secondary">Не указаны</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="text-end">
+                                <span class="badge bg-primary p-2 mb-2">
+                                    <i class="bi bi-people me-1"></i> {{ vacancy.applications|length }} откликов
+                                </span>
+                                <p class="text-secondary small">
+                                    Опубликовано: {{ vacancy.created_at.strftime('%d.%m.%Y') }}
+                                </p>
+                                {% if vacancy.applications %}
+                                    <a href="{{ url_for('auth.vacancy_applications', vacancy_id=vacancy.id) }}"
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-eye me-1"></i>Смотреть отклики
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card p-5 text-center">
+            <i class="bi bi-briefcase fs-1 text-secondary mb-3"></i>
+            <h3 class="h5 text-secondary mb-2">У вас пока нет размещенных вакансий</h3>
+            <p class="text-secondary">Начните с размещения первой вакансии</p>
+            <a href="{{ url_for('post_vacancy') }}" class="btn btn-primary mt-3">Разместить вакансию</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

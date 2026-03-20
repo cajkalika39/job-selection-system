@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="mb-4">Загрузка вакансий с hh.ru</h1>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Параметры поиска</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        {{ form.search_query.label(class="form-label") }}
+                        {{ form.search_query(class="form-control") }}
+                        {% if form.search_query.errors %}
+                            <div class="text-danger">
+                                {% for error in form.search_query.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.area.label(class="form-label") }}
+                            {{ form.area(class="form-select") }}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            {{ form.pages.label(class="form-label") }}
+                            {{ form.pages(class="form-control", type="number", min="1", max="5") }}
+                            <small class="text-muted">Чем больше страниц, тем дольше поиск</small>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Найти и сохранить
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if result %}
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Результаты поиска</h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead">
+                        Найдено: <strong>{{ result.found }}</strong> вакансий<br>
+                        Сохранено новых: <strong>{{ result.saved }}</strong>
+                    </p>
+
+                    {% if result.vacancies %}
+                        <h6>Примеры найденных вакансий:</h6>
+                        <div class="list-group">
+                            {% for vac in result.vacancies %}
+                                <div class="list-group-item">
+                                    <h6>{{ vac.title }}</h6>
+                                    <p class="mb-1">{{ vac.company }}</p>
+                                    <small class="text-muted">
+                                        {% if vac.salary_min or vac.salary_max %}
+                                            {% if vac.salary_min and vac.salary_max %}
+                                                {{ vac.salary_min }} - {{ vac.salary_max }} {{ vac.currency }}
+                                            {% elif vac.salary_min %}
+                                                от {{ vac.salary_min }} {{ vac.currency }}
+                                            {% elif vac.salary_max %}
+                                                до {{ vac.salary_max }} {{ vac.currency }}
+                                            {% endif %}
+                                        {% else %}
+                                            Зарплата не указана
+                                        {% endif %}
+                                        • {{ vac.location }}
+                                    </small>
+                                    <br>
+                                    <small class="text-muted">
+                                        Навыков найдено: {{ vac.skills|length }}
+                                    </small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Информация</h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    <i class="bi bi-info-circle"></i>
+                    Парсер использует официальное API hh.ru для поиска вакансий.
+                </p>
+                <p>
+                    <strong>Как это работает:</strong>
+                </p>
+                <ol>
+                    <li>Введите ключевое слово (например, "Python")</li>
+                    <li>Выберите регион</li>
+                    <li>Укажите количество страниц (1 страница = 20 вакансий)</li>
+                    <li>Нажмите "Найти и сохранить"</li>
+                </ol>
+                <p class="text-muted small">
+                    ⚠️ Не злоупотребляйте частыми запросами, чтобы не быть заблокированным.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

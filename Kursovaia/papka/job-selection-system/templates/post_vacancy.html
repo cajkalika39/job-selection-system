@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card p-4">
+                <h2 class="fw-bold mb-4" style="color: #0a2540;">Разместить новую вакансию</h2>
+
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Название вакансии</label>
+                        {{ form.title(class="form-control", placeholder="например: Python разработчик") }}
+                        {% if form.title.errors %}
+                            <div class="text-danger small">{{ form.title.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Компания</label>
+                        {{ form.company(class="form-control") }}
+                        {% if form.company.errors %}
+                            <div class="text-danger small">{{ form.company.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Описание вакансии</label>
+                        {{ form.description(class="form-control", rows=8, placeholder="Опишите обязанности, требования, условия работы...") }}
+                        {% if form.description.errors %}
+                            <div class="text-danger small">{{ form.description.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Зарплата от</label>
+                            {{ form.salary_min(class="form-control", placeholder="например: 100000") }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Зарплата до</label>
+                            {{ form.salary_max(class="form-control", placeholder="например: 200000") }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Локация</label>
+                        {{ form.location(class="form-control", placeholder="например: Москва, удаленно") }}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Требуемые навыки</label>
+                        {{ form.skills(class="form-control", placeholder="например: Python, Django, SQL, Git") }}
+                        <small class="text-secondary">Введите через запятую</small>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                        <a href="{{ url_for('auth.my_vacancies') }}" class="btn btn-outline-secondary">Отмена</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
