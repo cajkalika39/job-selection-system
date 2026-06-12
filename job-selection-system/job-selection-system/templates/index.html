@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row align-items-center">
+        <div class="col-lg-6">
+            {% if current_user.is_authenticated %}
+                <h1 class="display-4 fw-bold mb-4" style="color: #0a2540;">
+                    С возвращением,<br>{{ current_user.first_name }}!
+                </h1>
+                <p class="lead mb-4" style="color: #5f6c80; font-size: 1.25rem;">
+                    {% if current_user.is_job_seeker %}
+                        Продолжим поиск идеальной работы? У вас {{ current_user.skills|length }} навыков в профиле.
+                    {% else %}
+                        Готовы найти новых сотрудников? У вас размещено {{ current_user.posted_vacancies|length }} вакансий.
+                    {% endif %}
+                </p>
+            {% else %}
+                <h1 class="display-4 fw-bold mb-4" style="color: #0a2540;">
+                    Найдём вакансии<br>под ваши навыки
+                </h1>
+                <p class="lead mb-4" style="color: #5f6c80; font-size: 1.25rem;">
+                    Загрузите резюме или укажите навыки — мы сравним их с требованиями вакансий с hh.ru и покажем процент совпадения, недостающие навыки и рекомендации по развитию.
+                </p>
+                <div class="d-flex gap-3">
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg px-4">Начать бесплатно</a>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-lg px-4">Уже есть аккаунт</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Как это работает -->
+<div class="container py-5">
+    <h2 class="text-center fw-bold mb-5" style="color: #0a2540;">Как это работает</h2>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 p-4">
+                <div class="text-center mb-3">
+                    <span class="display-4">1️⃣</span>
+                </div>
+                <h3 class="h5 fw-bold text-center mb-3">Регистрация</h3>
+                <p class="text-secondary text-center mb-0">Создайте или войдите в свой аккаунт.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 p-4">
+                <div class="text-center mb-3">
+                    <span class="display-4">2️⃣</span>
+                </div>
+                <h3 class="h5 fw-bold text-center mb-3">Навыки или резюме</h3>
+                <p class="text-secondary text-center mb-0">Введите навыки вручную или загрузите резюме в PDF или DOCX.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 p-4">
+                <div class="text-center mb-3">
+                    <span class="display-4">3️⃣</span>
+                </div>
+                <h3 class="h5 fw-bold text-center mb-3">Подбор и рекомендации</h3>
+                <p class="text-secondary text-center mb-0">Получите подходящие вакансии и советы, что подтянуть.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Форма поиска -->
+<div class="container py-5" id="search-form">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card p-4">
+                <h3 class="fw-bold mb-4" style="color: #0a2540;">Профиль и навыки</h3>
+                <p class="text-secondary mb-4">Укажите навыки через запятую и выберите регион поиска.</p>
+
+                <form method="POST" action="/">
+                    <div class="mb-4">
+                        <label for="skills" class="form-label fw-semibold">Навыки</label>
+                        <input type="text" class="form-control form-control-lg" id="skills" name="skills"
+                               placeholder="Например: Python, SQL, React, управление проектами"
+                               value="{{ request.form.get('skills', '') }}">
+                        <div class="form-text text-secondary">Введите через запятую</div>
+                    </div>
+
+                    {% if current_user.is_authenticated and current_user.is_job_seeker %}
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="use_profile_skills"
+                                   name="use_profile_skills" value="true"
+                                   {% if request.form.get('use_profile_skills') %}checked{% endif %}>
+                            <label class="form-check-label fw-semibold" for="use_profile_skills">
+                                Добавить навыки из профиля
+                            </label>
+                            <div class="form-text text-secondary mt-1">
+                                Ваши навыки в профиле:
+                                {% if current_user.skills %}
+                                    <span class="badge bg-info text-dark">
+                                        {{ current_user.skills|map(attribute='skill.name')|join(', ') }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-warning">не указаны</span>
+                                    <a href="{{ url_for('auth.profile') }}" class="text-decoration-none">(добавить навыки)</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="location" class="form-label fw-semibold">Регион / Город</label>
+                            <input type="text" class="form-control form-control-lg" id="location" name="location"
+                                   placeholder="Например: Москва, Санкт-Петербург, Вся Россия"
+                                   value="{{ request.form.get('location', '') }}">
+                        </div>
+                    <div class="col-md-6">
+                        <label for="keywords" class="form-label fw-semibold">Ключевые слова поиска (необязательно)</label>
+                        <input type="text" class="form-control form-control-lg" id="keywords" name="keywords"
+                               placeholder="Например: разработчик"
+                               value="{{ request.form.get('keywords', '') }}">
+                    </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-between align-items-center">
+                        <button type="submit" name="action" value="skills" class="btn btn-primary btn-lg px-5">
+                            Подобрать вакансии
+                        </button>
+
+                        {% if current_user.is_authenticated and current_user.is_job_seeker %}
+                        <button type="button" class="btn btn-link text-secondary" data-bs-toggle="modal" data-bs-target="#resumeModal">
+                            <i class="bi bi-cloud-upload"></i> Загрузить резюме
+                        </button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для загрузки резюме -->
+<div class="modal fade" id="resumeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Загрузка резюме</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Поддерживаемые форматы:</strong> PDF, DOCX
+                </div>
+                <p class="text-secondary mb-3">Загрузите резюме — навыки будут извлечены автоматически и добавлены в поиск.</p>
+
+                <form method="POST" action="{{ url_for('upload_resume') }}" enctype="multipart/form-data" id="resumeUploadForm">
+                    <div class="mb-3">
+                        <label for="resume" class="form-label fw-semibold">Выберите файл резюме</label>
+                        <input class="form-control" type="file" id="resume" name="resume" accept=".pdf,.docx" required>
+                        <div class="form-text text-secondary">Максимальный размер: 16 МБ</div>
+                    </div>
+
+                    <div id="uploadProgress" class="progress mb-3 d-none">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                             role="progressbar" style="width: 100%">Обработка...</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" name="action" value="resume" class="btn btn-primary" id="uploadBtn">
+                            <i class="bi bi-cloud-upload me-2"></i>Загрузить и извлечь навыки
+                        </button>
+                        <button type="button" class="btn btn-link text-secondary" data-bs-dismiss="modal">
+                            Отмена
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Результаты подбора -->
+{% if results %}
+<div class="container py-5">
+    <h2 class="fw-bold mb-4" style="color: #0a2540;">Подходящие вакансии</h2>
+    <p class="text-secondary mb-4">Найдено {{ results|length }} вакансий</p>
+
+    {% for result in results %}
+    <div class="card mb-3 p-3">
+        <div class="row align-items-start">
+            <div class="col-lg-8">
+                <div class="d-flex align-items-center mb-2 flex-wrap gap-2">
+                    <h4 class="h5 fw-bold mb-0">{{ result.vacancy.title }}</h4>
+                    <span class="badge-match">
+                        <i class="bi bi-check-circle-fill me-1"></i>
+                        {{ result.match_percentage }}% совпадение
+                    </span>
+                </div>
+                <p class="text-secondary mb-2">
+                    <i class="bi bi-building me-1"></i> {{ result.vacancy.company or 'Компания не указана' }}
+                    {% if result.vacancy.location %}
+                        • <i class="bi bi-geo-alt me-1"></i> {{ result.vacancy.location }}
+                    {% endif %}
+                </p>
+                {% if result.vacancy.salary_min or result.vacancy.salary_max %}
+                <p class="text-success mb-2">
+                    <i class="bi bi-cash-stack me-1"></i>
+                    {% if result.vacancy.salary_min and result.vacancy.salary_max %}
+                        {{ result.vacancy.salary_min }} - {{ result.vacancy.salary_max }} ₽
+                    {% elif result.vacancy.salary_min %}
+                        от {{ result.vacancy.salary_min }} ₽
+                    {% elif result.vacancy.salary_max %}
+                        до {{ result.vacancy.salary_max }} ₽
+                    {% endif %}
+                </p>
+                {% endif %}
+
+                <div class="progress mb-3" style="height: 10px;">
+                    <div class="progress-bar bg-success" role="progressbar"
+                         style="width: {{ result.match_percentage }}%;"
+                         aria-valuenow="{{ result.match_percentage }}"
+                         aria-valuemin="0"
+                         aria-valuemax="100">
+                    </div>
+                </div>
+
+                {% if result.missing_skills %}
+                <div class="mb-3">
+                    <strong class="text-secondary">Недостающие навыки:</strong>
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                        {% for skill in result.missing_skills %}
+                        <span class="badge bg-light text-secondary p-2 border">{{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <button class="btn btn-link p-0 text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#rec{{ result.vacancy.id }}">
+                    <i class="bi bi-lightbulb me-1"></i> Показать рекомендации по развитию
+                </button>
+
+                <div class="collapse mt-3" id="rec{{ result.vacancy.id }}">
+                    <div class="card card-body bg-light">
+                        <h6 class="fw-bold mb-3">Рекомендации по развитию:</h6>
+                 {% for rec in result.recommendations %}
+                <div class="mb-3 pb-2 border-bottom">
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="bi bi-graph-up text-primary mt-1"></i>
+                        <div>
+                            <strong class="text-primary">{{ rec.skill }}</strong>
+                            <p class="text-secondary mb-1 small">{{ rec.description }}</p>
+                            {% set count = rec.vacancies_count|default(0) %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                <span class="badge bg-success text-white p-2">У вас есть все необходимые навыки!</span>
+                {% endif %}
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                {% if result.vacancy.url %}
+                    <a href="{{ result.vacancy.url }}" target="_blank" class="btn btn-outline-primary w-100 w-lg-auto">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>Смотреть на hh.ru
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('vacancy_detail', vacancy_id=result.vacancy.id) }}" class="btn btn-outline-primary w-100 w-lg-auto">
+                        <i class="bi bi-info-circle me-1"></i>Подробнее
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<script>
+    // Автоматическое скрытие алертов
+    setTimeout(function() {
+        document.querySelectorAll('.alert').forEach(function(alert) {
+            var bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        });
+    }, 5000);
+
+    // Показываем прогресс загрузки
+    const uploadForm = document.getElementById('resumeUploadForm');
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function() {
+            const uploadBtn = document.getElementById('uploadBtn');
+            const progress = document.getElementById('uploadProgress');
+
+            if (uploadBtn) {
+                uploadBtn.disabled = true;
+                uploadBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Обработка...';
+            }
+            if (progress) {
+                progress.classList.remove('d-none');
+            }
+        });
+    }
+
+    // Валидация файла перед отправкой
+    const resumeInput = document.getElementById('resume');
+    if (resumeInput) {
+        resumeInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+                const maxSize = 16 * 1024 * 1024; // 16 MB
+
+                if (!allowedTypes.includes(file.type)) {
+                    alert('Пожалуйста, загрузите файл в формате PDF или DOCX');
+                    this.value = '';
+                    return;
+                }
+
+                if (file.size > maxSize) {
+                    alert('Файл слишком большой. Максимальный размер: 16 МБ');
+                    this.value = '';
+                    return;
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

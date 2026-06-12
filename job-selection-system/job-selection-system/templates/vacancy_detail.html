@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+
+            <div class="card p-4">
+                <h1 class="fw-bold mb-2" style="color: #0a2540;">{{ vacancy.title }}</h1>
+
+                <div class="mb-3">
+                    <p class="text-secondary mb-1">
+                        <i class="bi bi-building me-2"></i>{{ vacancy.company or 'Компания не указана' }}
+                    </p>
+                    {% if vacancy.location %}
+                    <p class="text-secondary mb-1">
+                        <i class="bi bi-geo-alt me-2"></i>{{ vacancy.location }}
+                    </p>
+                    {% endif %}
+                    {% if vacancy.salary_min or vacancy.salary_max %}
+                    <p class="text-success mb-1">
+                        <i class="bi bi-cash-stack me-2"></i>
+                        {% if vacancy.salary_min and vacancy.salary_max %}
+                            {{ vacancy.salary_min }} - {{ vacancy.salary_max }} ₽
+                        {% elif vacancy.salary_min %}
+                            от {{ vacancy.salary_min }} ₽
+                        {% elif vacancy.salary_max %}
+                            до {{ vacancy.salary_max }} ₽
+                        {% endif %}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <h5 class="fw-bold mb-2 mt-3">Описание вакансии</h5>
+                <div style="white-space: pre-wrap; line-height: 1.2; font-size: 1rem; color: #2c2c2c;">
+                    {%- if vacancy.description -%}
+                        {%- set text = vacancy.description|replace('\\n', '\n') -%}
+                        {%- for line in text.split('\n') -%}
+                            {{- line -}}{% if not loop.last %}<br>{% endif %}
+                        {%- endfor -%}
+                    {%- else -%}
+                        Описание отсутствует
+                    {%- endif -%}
+                </div>
+
+                {% if vacancy.skills %}
+                <h5 class="fw-bold mb-2 mt-3">Требуемые навыки</h5>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for vs in vacancy.skills %}
+                        <span class="badge bg-light text-dark p-2 border">
+                            {{ vs.skill.name }}
+                        </span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if vacancy.employer_phone %}
+                <p class="text-secondary mb-3">
+                    <i class="bi bi-telephone me-2"></i>
+                    <strong>Контактный телефон:</strong> {{ vacancy.employer_phone }}
+                </p>
+                {% endif %}
+
+                <div class="d-flex gap-3 mt-2">
+
+                    
+                    {% if current_user.is_authenticated and current_user.is_job_seeker %}
+                        {% if has_applied %}
+                            <button class="btn btn-success" disabled>
+                                <i class="bi bi-check-circle me-2"></i>Вы уже откликнулись
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#applyModal">
+                                <i class="bi bi-send me-2"></i>Откликнуться
+                            </button>
+                        {% endif %}
+                    {% elif not current_user.is_authenticated %}
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Войдите, чтобы откликнуться
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для отклика -->
+{% if current_user.is_authenticated and current_user.is_job_seeker and not has_applied %}
+<div class="modal fade" id="applyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Отклик на вакансию</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('auth.apply_to_vacancy', vacancy_id=vacancy.id) }}">
+                <div class="modal-body">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Сопроводительное письмо</label>
+                        {{ form.cover_letter(class="form-control", rows=5, placeholder="Расскажите, почему вы подходите на эту позицию...") }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Отправить отклик</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
