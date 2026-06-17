@@ -2,9 +2,13 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, current_user, logout_user, login_required
 from extensions import db, bcrypt
 from models import User, UserSkill, Skill, Application, Vacancy
-from forms import RegistrationForm, LoginForm, ProfileInfoForm, ProfileSkillsForm, VacancyAddForm, VacancyEditForm, ApplicationForm
+from forms import RegistrationForm, LoginForm, ProfileInfoForm, ProfileSkillsForm, VacancyAddForm, VacancyEditForm, \
+    ApplicationForm
+from matcher import rank_candidates_for_vacancy, calculate_candidate_match_for_vacancy
+import json
 
 auth_bp = Blueprint('auth', __name__)
+
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
@@ -39,6 +43,7 @@ def register():
 
     return render_template('register.html', form=form)
 
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Вход в систему"""
@@ -59,6 +64,7 @@ def login():
 
     return render_template('login.html', form=form)
 
+
 @auth_bp.route('/logout')
 @login_required
 def logout():
@@ -66,6 +72,7 @@ def logout():
     logout_user()
     flash('Вы вышли из системы', 'info')
     return redirect(url_for('index'))
+
 
 @auth_bp.route('/profile', methods=['GET', 'POST'])
 @login_required
@@ -125,6 +132,7 @@ def profile():
                            info_form=info_form,
                            skills_form=skills_form,
                            user=current_user)
+
 
 @auth_bp.route('/post-vacancy', methods=['GET', 'POST'])
 @login_required
@@ -260,6 +268,7 @@ def delete_vacancy(vacancy_id):
 
     return redirect(url_for('auth.my_vacancies'))
 
+
 @auth_bp.route('/my-vacancies')
 @login_required
 def my_vacancies():
@@ -335,24 +344,42 @@ def my_applications():
                            applications=applications,
                            stats=stats)
 
+
+# ✅ ОБНОВЛЕННЫЙ МАРШРУТ - РАСЧЕТ НА ЛЕТУ
 @auth_bp.route('/vacancy/<int:vacancy_id>/applications')
 @login_required
 def vacancy_applications(vacancy_id):
-    """Отклики на вакансию (для работодателя)"""
+    """Отклики на вакансию с ранжированием кандидатов (расчет на лету)"""
+    from models import Vacancy, Application
+    from matcher import rank_candidates_for_vacancy
+
     vacancy = Vacancy.query.get_or_404(vacancy_id)
 
     if vacancy.posted_by != current_user.id:
         flash('У вас нет доступа к этой странице', 'danger')
         return redirect(url_for('index'))
 
-    return render_template('vacancy_applications.html', vacancy=vacancy)
+    # Получаем все отклики
+    applications = Application.query.filter_by(
+        vacancy_id=vacancy_id
+    ).all()
+
+    # ✅ РАСЧЕТ НА ЛЕТУ - ранжирование кандидатов
+    ranked_candidates = rank_candidates_for_vacancy(vacancy, applications)
+
+    return render_template(
+        'vacancy_applications.html',
+        vacancy=vacancy,
+        ranked_candidates=ranked_candidates,
+        total_applications=len(applications)
+    )
 
 
 @auth_bp.route('/application/<int:application_id>/<action>')
 @login_required
 def handle_application(application_id, action):
     """Обработка отклика"""
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     application = Application.query.get_or_404(application_id)
 
@@ -362,11 +389,11 @@ def handle_application(application_id, action):
 
     if action == 'accept':
         application.status = 'accepted'
-        application.status_updated_at = datetime.utcnow()
+        application.status_updated_at = datetime.now(timezone.utc)
         flash('Отклик принят', 'success')
     elif action == 'reject':
         application.status = 'rejected'
-        application.status_updated_at = datetime.utcnow()
+        application.status_updated_at = datetime.now(timezone.utc)
         flash('Отклик отклонен', 'info')
 
     db.session.commit()

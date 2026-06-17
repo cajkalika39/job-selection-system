@@ -16,9 +16,17 @@ _morph_instance = None
 def get_model() -> SentenceTransformer:
     global _model_instance
     if _model_instance is None:
-        logger.info("Загрузка модели SentenceTransformer... (это произойдет только один раз)")
-        _model_instance = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-        logger.info("Модель успешно загружена")
+        try:
+            logger.info("Загрузка модели SentenceTransformer...")
+            _model_instance = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+            logger.info("Модель успешно загружена")
+        except Exception as e:
+            logger.error(f"Ошибка загрузки модели: {e}")
+            try:
+                _model_instance = SentenceTransformer('all-MiniLM-L6-v2')
+                logger.warning("Используется fallback модель all-MiniLM-L6-v2")
+            except:
+                raise RuntimeError("Не удалось загрузить ни одну модель SentenceTransformer")
     return _model_instance
 
 
@@ -36,7 +44,6 @@ def normalize_text(text: str) -> str:
         return ""
 
     text = text.lower()
-
     text = re.sub(r'[^\w\s#+]', ' ', text)
 
     words = text.split()
@@ -71,7 +78,6 @@ def calculate_skill_match(user_skills: Set[str], vacancy_skills: List[str]) -> t
     exact_matches = set()
     for user_skill in user_set:
         for vac_skill in vacancy_set:
-            # Если навык из exact_only_skills - только точное совпадение
             if vac_skill.lower() in exact_only_skills:
                 if user_skill.lower() == vac_skill.lower():
                     exact_matches.add(vac_skill)
@@ -249,6 +255,60 @@ def clean_skills_input(text: str) -> str:
 
     return ', '.join(cleaned_words)
 
+def calculate_candidate_match_for_vacancy(candidate, vacancy) -> Dict:
+    candidate_skills = set()
+    if hasattr(candidate, 'skills'):
+        for us in candidate.skills:
+            candidate_skills.add(us.skill.name)
+
+    vacancy_skills = []
+    if hasattr(vacancy, 'skills'):
+        vacancy_skills = [vs.skill.name for vs in vacancy.skills]
+
+    if not vacancy_skills:
+        return {
+            'match_percentage': 0,
+            'matched_skills': [],
+            'missing_skills': [],
+            'candidate_skills': list(candidate_skills)
+        }
+
+    match_percent, matched, missing = calculate_skill_match(
+        candidate_skills, vacancy_skills
+    )
+
+    return {
+        'match_percentage': round(match_percent, 2),
+        'matched_skills': list(matched),
+        'missing_skills': list(missing),
+        'candidate_skills': list(candidate_skills)
+    }
+
+
+def rank_candidates_for_vacancy(vacancy, applications) -> List[Dict]:
+    ranked = []
+
+    for app in applications:
+        candidate = app.applicant
+
+        match_data = calculate_candidate_match_for_vacancy(candidate, vacancy)
+
+        ranked.append({
+            'application': app,
+            'applicant': candidate,
+            'match_percentage': match_data['match_percentage'],
+            'matched_skills': match_data['matched_skills'],
+            'missing_skills': match_data['missing_skills'],
+            'candidate_skills': match_data['candidate_skills']
+        })
+
+    ranked.sort(key=lambda x: x['match_percentage'], reverse=True)
+
+    for i, item in enumerate(ranked, 1):
+        item['rank'] = i
+
+    return ranked
+
 
 class SkillMatcher:
     """Продвинутый матчер с использованием семантического поиска"""
@@ -306,22 +366,17 @@ class SkillMatcher:
                 if query_embedding is not None and v["title_embedding"] is not None:
                     title_score = calculate_semantic_similarity(query_embedding, v["title_embedding"])
 
-                # Навыки - 70%, семантика - 20%, название - 10%
                 final_percent = (
                                         skill_score * 0.7 +
                                         semantic_score * 0.2 +
                                         title_score * 0.1
                                 ) * 100
             else:
-                # Нет совпадений навыков - максимум 10% от семантики
                 semantic_score = 0
                 if query_embedding is not None and v["combined_embedding"] is not None:
                     semantic_score = calculate_semantic_similarity(query_embedding, v["combined_embedding"])
-
-                # Без совпадений навыков - не больше 10%
                 final_percent = min(semantic_score * 10, 10)
 
-            # Если все навыки совпали - 100%
             if len(missing_skills) == 0 and len(v["skills"]) > 0:
                 final_percent = 100
 
@@ -364,7 +419,6 @@ class SkillMatcher:
     def calculate_full_match_percentage(self, user_skills: Set[str], vacancy, query_embedding=None) -> float:
         """
         Полный расчет процента совпадения с учетом семантики и заголовка
-        Формула: навыки - 70%, семантика - 20%, название - 10%
         """
         prepared = prepare_vacancies([vacancy])
         if not prepared:
@@ -384,6 +438,12 @@ class SkillMatcher:
             except Exception as e:
                 logger.error(f"Ошибка создания эмбеддинга запроса: {e}")
                 query_embedding = None
+
+        if query_embedding is None:
+            skill_match_percent, _, missing = calculate_skill_match(user_skills, v["skills"])
+            if len(missing) == 0 and len(v["skills"]) > 0:
+                return 100.0
+            return round(skill_match_percent, 2)
 
         skill_match_percent, matched_skills, missing_skills = calculate_skill_match(user_skills, v["skills"])
         skill_score = skill_match_percent / 100

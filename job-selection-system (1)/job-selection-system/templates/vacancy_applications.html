@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold" style="color: #0a2540;">Отклики на вакансию</h2>
+            <p class="text-secondary mb-0">
+                <i class="bi bi-briefcase me-2"></i>{{ vacancy.title }}
+            </p>
+        </div>
+        <a href="{{ url_for('auth.my_vacancies') }}" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-left me-2"></i>К моим вакансиям
+        </a>
+    </div>
+
+    <!-- Информация о вакансии -->
+    <div class="card p-4 mb-4">
+        <div class="row">
+            <div class="col-md-6">
+                <h3 class="h4 mb-2">{{ vacancy.title }}</h3>
+                <p class="text-secondary mb-0">
+                    <i class="bi bi-building me-1"></i> {{ vacancy.company }}
+                    {% if vacancy.location %}
+                        • <i class="bi bi-geo-alt me-1"></i> {{ vacancy.location }}
+                    {% endif %}
+                </p>
+                {% if vacancy.salary_min or vacancy.salary_max %}
+                <p class="text-success mb-0 mt-2">
+                    <i class="bi bi-cash-stack me-1"></i>
+                    {% if vacancy.salary_min and vacancy.salary_max %}
+                        {{ vacancy.salary_min }} - {{ vacancy.salary_max }} ₽
+                    {% elif vacancy.salary_min %}
+                        от {{ vacancy.salary_min }} ₽
+                    {% elif vacancy.salary_max %}
+                        до {{ vacancy.salary_max }} ₽
+                    {% endif %}
+                </p>
+                {% endif %}
+            </div>
+            <div class="col-md-6 text-md-end">
+                <span class="badge bg-primary p-2">
+                    <i class="bi bi-people me-1"></i> {{ total_applications }} откликов
+                </span>
+            </div>
+        </div>
+
+        <!-- Требуемые навыки -->
+        {% if vacancy.skills %}
+        <div class="mt-3 pt-3 border-top">
+            <strong>Требуемые навыки:</strong>
+            <div class="d-flex flex-wrap gap-2 mt-2">
+                {% for vs in vacancy.skills %}
+                    <span class="badge bg-light text-dark p-2 border">
+                        <i class="bi bi-check-circle-fill text-success me-1" style="font-size: 0.7rem;"></i>
+                        {{ vs.skill.name }}
+                    </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Список кандидатов с ранжированием -->
+    {% if ranked_candidates %}
+        <div class="row">
+            {% for item in ranked_candidates %}
+                {% set app = item.application %}
+                {% set candidate = item.applicant %}
+
+                <div class="col-12 mb-3" data-aos="fade-up" data-aos-delay="{{ loop.index * 50 }}">
+                    <div class="card p-4">
+
+                        <!-- Шапка -->
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="avatar-circle" style="width: 50px; height: 50px; background: linear-gradient(135deg, #FF6B35, #FF8C5A); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; font-weight: 600;">
+                                    {{ candidate.first_name[0] }}{{ candidate.last_name[0] }}
+                                </div>
+                                <div>
+                                    <h4 class="h5 fw-bold mb-1">
+                                        {{ candidate.full_name }}
+                                    </h4>
+                                    <p class="text-secondary small mb-0">
+                                        <i class="bi bi-envelope me-1"></i> {{ candidate.email }}
+                                        {% if candidate.phone %}
+                                            • <i class="bi bi-telephone me-1"></i> {{ candidate.phone }}
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge
+                                    {% if app.status == 'accepted' %}bg-success
+                                    {% elif app.status == 'rejected' %}bg-danger
+                                    {% else %}bg-warning{% endif %}
+                                    p-2">
+                                    <i class="bi
+                                        {% if app.status == 'accepted' %}bi-check-circle
+                                        {% elif app.status == 'rejected' %}bi-x-circle
+                                        {% else %}bi-hourglass-split{% endif %}
+                                        me-1"></i>
+                                    {{ app.status_rus }}
+                                </span>
+                                <br>
+                                <small class="text-secondary">
+                                    {{ app.created_at.strftime('%d.%m.%Y %H:%M') if app.created_at else '' }}
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Прогресс-бар совпадения -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <strong class="text-secondary">Совпадение с вакансией</strong>
+                                <span class="fw-bold" style="color: #FF6B35; font-size: 1.3rem;">
+                                    {{ item.match_percentage }}%
+                                </span>
+                            </div>
+                            <div class="progress" style="height: 14px; border-radius: 8px; background: #f0f0f0;">
+                                <div class="progress-bar" role="progressbar"
+                                     style="width: {{ item.match_percentage }}%; background: linear-gradient(90deg, #FF6B35, #FF8C5A); border-radius: 8px;"
+                                     aria-valuenow="{{ item.match_percentage }}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Навыки кандидата с цветовой маркировкой -->
+                        <div class="mb-3">
+                            <strong class="text-secondary">Навыки кандидата:</strong>
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                {% if item.candidate_skills %}
+                                    {% for skill in item.candidate_skills %}
+                                        {% if skill in item.matched_skills %}
+                                            <span class="badge bg-success text-white p-2">
+                                                <i class="bi bi-check-circle-fill me-1"></i>
+                                                {{ skill }}
+                                            </span>
+                                        {% elif skill in item.missing_skills %}
+                                            <span class="badge bg-danger text-white p-2">
+                                                <i class="bi bi-x-circle-fill me-1"></i>
+                                                {{ skill }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-light text-dark p-2 border">
+                                                {{ skill }}
+                                            </span>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-secondary">Навыки не указаны</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Недостающие навыки -->
+                        {% if item.missing_skills %}
+                        <div class="mb-3">
+                            <strong class="text-danger">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                Не хватает навыков:
+                            </strong>
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                {% for skill in item.missing_skills %}
+                                    <span class="badge bg-danger bg-opacity-10 text-danger p-2 border border-danger">
+                                        <i class="bi bi-x-circle-fill me-1"></i>
+                                        {{ skill }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Сопроводительное письмо -->
+                        {% if app.cover_letter %}
+                        <div class="mb-3">
+                            <button class="btn btn-link p-0 text-secondary" type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#cover{{ app.id }}">
+                                <i class="bi bi-envelope-paper me-1"></i>
+                                Показать сопроводительное письмо
+                            </button>
+                            <div class="collapse mt-2" id="cover{{ app.id }}">
+                                <div class="card card-body bg-light">
+                                    <p class="mb-0">{{ app.cover_letter }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Действия работодателя -->
+                        <div class="d-flex gap-2 mt-2 pt-3 border-top">
+                            {% if app.status == 'pending' %}
+                                <a href="{{ url_for('auth.handle_application', application_id=app.id, action='accept') }}"
+                                   class="btn btn-success btn-sm">
+                                    <i class="bi bi-check-circle me-1"></i>Принять
+                                </a>
+                                <a href="{{ url_for('auth.handle_application', application_id=app.id, action='reject') }}"
+                                   class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-x-circle me-1"></i>Отклонить
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+    {% else %}
+        <div class="card p-5 text-center">
+            <i class="bi bi-inbox fs-1 text-secondary mb-3"></i>
+            <h3 class="h5 text-secondary">Пока нет откликов на эту вакансию</h3>
+            <p class="text-secondary">Когда кандидаты откликнутся, вы увидите их здесь с анализом совпадения</p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .progress-bar {
+        transition: width 0.8s ease;
+    }
+    .card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .btn-link {
+        text-decoration: none;
+    }
+    .btn-link:hover {
+        text-decoration: underline;
+    }
+    .badge {
+        font-weight: 500;
+    }
+</style>
+
+<script>
+    // Анимация прогресс-баров при загрузке
+    document.addEventListener('DOMContentLoaded', function() {
+        const progressBars = document.querySelectorAll('.progress-bar');
+        progressBars.forEach(function(bar, index) {
+            const width = bar.style.width;
+            bar.style.width = '0%';
+            setTimeout(function() {
+                bar.style.width = width;
+            }, 100 + index * 50);
+        });
+    });
+</script>
+{% endblock %}

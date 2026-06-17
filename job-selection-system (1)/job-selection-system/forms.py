@@ -59,6 +59,7 @@ class ProfileSkillsForm(FlaskForm):
     skills = TextAreaField('Навыки (через запятую)', validators=[Optional()])
     submit = SubmitField('Сохранить навыки')
 
+
 class VacancyEditForm(FlaskForm):
     """Форма редактирования вакансии"""
     title = StringField('Название', validators=[DataRequired()])
